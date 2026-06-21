@@ -3,7 +3,7 @@ FROM node:8.11.4-alpine
 WORKDIR /app
 
 RUN npm config set registry https://registry.npmmirror.com/ \
-&& npm i -g pm2@latest --no-optional --unsafe-perm
+&& npm i -g pm2@3.5.1 --no-optional --unsafe-perm
 
 COPY package.json ./
 RUN npm install --production

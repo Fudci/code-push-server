@@ -2,8 +2,8 @@ FROM node:8.11.4-alpine
 
 WORKDIR /app
 
-RUN npm config set registry https://registry.npm.taobao.org/ \
-&& npm i -g pm2@latest --no-optional
+RUN npm config set registry https://registry.npmmirror.com/ \
+&& npm i -g pm2@latest --no-optional --unsafe-perm
 
 COPY package.json ./
 RUN npm install --production

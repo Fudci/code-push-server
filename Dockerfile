@@ -15,4 +15,6 @@ RUN echo '{ "apps" : [ { "name": "code-push-server", "max_memory_restart": "500M
 
 EXPOSE 3000
 
+ENV PM2_HOME=/app/.pm2
+
 CMD ["pm2-docker", "start", "/process.json"]

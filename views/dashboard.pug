@@ -611,12 +611,16 @@ html(lang="en")
       }
 
       // ===== AUTH =====
+      // cp_auth = access key (token dari DB, < 64 char)
+      // cp_jwt  = JWT sementara (hanya untuk buat access key)
       function checkAuth() {
-        const token = sessionStorage.getItem('cp_auth');
-        if (token) {
-          authToken = token;
+        const accessKey = sessionStorage.getItem('cp_auth');
+        const savedUser = sessionStorage.getItem('cp_user');
+        if (accessKey) {
+          authToken = accessKey;
           document.getElementById('auth-overlay').style.display = 'none';
           document.getElementById('app').style.display = 'block';
+          if (savedUser) document.getElementById('user-label').textContent = savedUser;
           loadDashboard();
         }
       }
@@ -630,23 +634,74 @@ html(lang="en")
         const btn = e.target.querySelector('.btn-login');
         btn.textContent = 'Masuk...'; btn.disabled = true;
         try {
+          // Step 1: Login → dapat JWT
           const r = await fetch(API + '/auth/login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
             body: 'account=' + encodeURIComponent(account) + '&password=' + encodeURIComponent(password)
           });
           const data = await r.json();
-          if (data.status === 'OK') {
-            authToken = data.results.tokens;
-            sessionStorage.setItem('cp_auth', authToken);
-            document.getElementById('auth-overlay').style.display = 'none';
-            document.getElementById('app').style.display = 'block';
-            document.getElementById('user-label').textContent = account;
-            loadDashboard();
-          } else {
+          if (data.status !== 'OK') {
             errEl.style.display = 'block';
+            btn.textContent = 'Masuk ke Dashboard →'; btn.disabled = false;
+            return;
           }
+          const jwtToken = data.results.tokens;
+
+          // Step 2: Buat Access Key via /accessKeys menggunakan JWT
+          btn.textContent = 'Membuat sesi...';
+          const time = Date.now();
+          const akName = 'Dashboard-' + time;
+          const akRes = await fetch(API + '/accessKeys', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded',
+              'Authorization': 'Bearer ' + jwtToken
+            },
+            body: 'friendlyName=' + encodeURIComponent(akName)
+                + '&createdBy=dashboard'
+                + '&ttl=' + (60 * 60 * 24 * 7 * 1000)  // 7 hari
+                + '&description=Dashboard+Session'
+          });
+
+          let accessKey = null;
+          if (akRes.ok) {
+            const akData = await akRes.json();
+            accessKey = akData && akData.accessKey ? akData.accessKey.name : null;
+          }
+
+          // Fallback: jika buat access key gagal (misal duplicate), coba ambil yang sudah ada
+          if (!accessKey) {
+            // Simpan JWT langsung sebagai fallback — akan error jika > 64 char
+            // tapi coba dulu ambil access keys yang ada
+            const listRes = await fetch(API + '/accessKeys', {
+              headers: { 'Authorization': 'Bearer ' + jwtToken }
+            });
+            if (listRes.ok) {
+              const listData = await listRes.json();
+              const keys = listData.accessKeys || [];
+              const dashKey = keys.find(k => k.friendlyName && k.friendlyName.startsWith('Dashboard-'));
+              if (dashKey) accessKey = dashKey.name;
+            }
+          }
+
+          if (!accessKey) {
+            errEl.textContent = '❌ Gagal buat sesi. Coba login ulang.';
+            errEl.style.display = 'block';
+            btn.textContent = 'Masuk ke Dashboard →'; btn.disabled = false;
+            return;
+          }
+
+          // Step 3: Simpan access key, tampilkan dashboard
+          authToken = accessKey;
+          sessionStorage.setItem('cp_auth', accessKey);
+          sessionStorage.setItem('cp_user', account);
+          document.getElementById('auth-overlay').style.display = 'none';
+          document.getElementById('app').style.display = 'block';
+          document.getElementById('user-label').textContent = account;
+          loadDashboard();
         } catch(err) {
+          errEl.textContent = '❌ Error: ' + err.message;
           errEl.style.display = 'block';
         }
         btn.textContent = 'Masuk ke Dashboard →'; btn.disabled = false;
@@ -654,6 +709,7 @@ html(lang="en")
 
       document.getElementById('btn-logout').addEventListener('click', () => {
         sessionStorage.removeItem('cp_auth');
+        sessionStorage.removeItem('cp_user');
         location.reload();
       });
       document.getElementById('btn-refresh').addEventListener('click', loadDashboard);

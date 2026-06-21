@@ -19,7 +19,7 @@ var proto = module.exports = function (){
 proto.sendMail = function (options) {
   return new Promise((resolve, reject) => {
     if(!_.get(options, 'to')) {
-      return reject(new AppError.AppError("to是必传参数"));
+      return reject(new AppError.AppError("'to' is a required parameter"));
     }
     var smtpConfig = _.get(config, 'smtpConfig');
     if (!smtpConfig) {
@@ -29,7 +29,7 @@ proto.sendMail = function (options) {
     var sendEmailAddress = _.get(smtpConfig, 'auth.user');
     var defaultMailOptions = {
       from: `"CodePush Server" <${sendEmailAddress}>`, // sender address
-      to: '', // list of receivers 必传参数
+      to: '', // list of receivers (required)
       subject: 'CodePush Server', // Subject line
       html: '' // html body
     };
@@ -46,7 +46,7 @@ proto.sendMail = function (options) {
 proto.sendRegisterCode = function (email, code) {
   return proto.sendMail({
     to: email,
-    html: `<div>您接收的验证码为: <em style="color:red;">${code}</em>  20分钟内有效</div>`
+    html: `<div>Your verification code is: <em style="color:red;">${code}</em>  (valid for 20 minutes)</div>`
   });
 };
 

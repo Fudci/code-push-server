@@ -100,10 +100,10 @@ const LOGIN_LIMIT_PRE = 'LOGIN_LIMIT_PRE_';
 
 proto.login = function (account, password) {
   if (_.isEmpty(account)) {
-    return Promise.reject(new AppError.AppError("请您输入邮箱地址"))
+    return Promise.reject(new AppError.AppError("Please enter your email address"))
   }
   if (_.isEmpty(password)) {
-    return Promise.reject(new AppError.AppError("请您输入密码"))
+    return Promise.reject(new AppError.AppError("Please enter your password"))
   }
   var where = {};
   if (validator.isEmail(account)) {
@@ -115,7 +115,7 @@ proto.login = function (account, password) {
   return models.Users.findOne({where: where})
   .then((users) => {
     if (_.isEmpty(users)) {
-      throw new AppError.AppError("您输入的邮箱或密码有误");
+      throw new AppError.AppError("Invalid email or password");
     }
     return users;
   })
@@ -126,7 +126,7 @@ proto.login = function (account, password) {
       return client.getAsync(loginKey)
       .then((loginErrorTimes) => {
         if (loginErrorTimes > tryLoginTimes) {
-          throw new AppError.AppError(`您输入密码错误次数超过限制，帐户已经锁定`);
+          throw new AppError.AppError(`Too many failed login attempts. Your account has been locked.`);
         }
         return users;
       })
@@ -153,7 +153,7 @@ proto.login = function (account, password) {
         })
         .finally(() => client.quit());
       }
-      throw new AppError.AppError("您输入的邮箱或密码有误");
+      throw new AppError.AppError("Invalid email or password");
     } else {
       return users;
     }
@@ -166,16 +166,16 @@ const EXPIRED_SPEED = 10;
 
 proto.sendRegisterCode = function (email) {
   if (_.isEmpty(email)) {
-    return Promise.reject(new AppError.AppError("请您输入邮箱地址"));
+    return Promise.reject(new AppError.AppError("Please enter your email address"));
   }
   return models.Users.findOne({where: {email: email}})
   .then((u) => {
     if (u) {
-      throw new AppError.AppError(`"${email}" 已经注册过，请更换邮箱注册`);
+      throw new AppError.AppError(`"${email}" is already registered. Please use a different email.`);
     }
   })
   .then(() => {
-    //将token临时存储到redis
+    // Temporarily store token in Redis
     var token = security.randToken(40);
     var client = factory.getRedisClient("default");
     return client.setexAsync(`${REGISTER_CODE}${security.md5(email)}`, EXPIRED, token)
@@ -185,7 +185,7 @@ proto.sendRegisterCode = function (email) {
     .finally(() => client.quit());
   })
   .then((token) => {
-    //将token发送到用户邮箱
+    // Send token to user email
     var emailManager = new EmailManager();
     return emailManager.sendRegisterCode(email, token);
   })
@@ -195,7 +195,7 @@ proto.checkRegisterCode = function (email, token) {
   return models.Users.findOne({where: {email: email}})
   .then((u) => {
     if (u) {
-      throw new AppError.AppError(`"${email}" 已经注册过，请更换邮箱注册`);
+      throw new AppError.AppError(`"${email}" is already registered. Please use a different email.`);
     }
   })
   .then(() => {
@@ -204,7 +204,7 @@ proto.checkRegisterCode = function (email, token) {
     return client.getAsync(registerKey)
     .then((storageToken) => {
       if (_.isEmpty(storageToken)) {
-        throw new AppError.AppError(`验证码已经失效，请您重新获取`);
+        throw new AppError.AppError(`Verification code has expired. Please request a new one.`);
       }
       if (!_.eq(token, storageToken)) {
         client.ttlAsync(registerKey)
@@ -215,7 +215,7 @@ proto.checkRegisterCode = function (email, token) {
           return ttl;
         })
         .finally(() => client.quit());
-        throw new AppError.AppError(`您输入的验证码不正确，请重新输入`);
+        throw new AppError.AppError(`Incorrect verification code. Please try again.`);
       }
       return storageToken;
     })
@@ -226,7 +226,7 @@ proto.register = function (email, password) {
   return models.Users.findOne({where: {email: email}})
   .then((u) => {
     if (u) {
-      throw new AppError.AppError(`"${email}" 已经注册过，请更换邮箱注册`);
+      throw new AppError.AppError(`"${email}" is already registered. Please use a different email.`);
     }
   })
   .then(() => {
@@ -241,19 +241,19 @@ proto.register = function (email, password) {
 
 proto.changePassword = function (uid, oldPassword, newPassword) {
   if (!_.isString(newPassword) || newPassword.length < 6) {
-    return Promise.reject(new AppError.AppError("请您输入6～20位长度的新密码"));
+    return Promise.reject(new AppError.AppError("Please enter a new password between 6 and 20 characters"));
   }
   return models.Users.findOne({where: {id: uid}})
   .then((u) => {
     if (!u) {
-      throw new AppError.AppError(`未找到用户信息`);
+      throw new AppError.AppError(`User not found.`);
     }
     return u;
   })
   .then((u) => {
     var isEq = security.passwordVerifySync(oldPassword, u.get('password'));
     if (!isEq) {
-      throw new AppError.AppError(`您输入的旧密码不正确，请重新输入`);
+      throw new AppError.AppError(`Incorrect old password. Please try again.`);
     }
     u.set('password', security.passwordHashSync(newPassword));
     u.set('ack_code', security.randToken(5));

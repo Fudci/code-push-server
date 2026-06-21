@@ -314,7 +314,7 @@ proto.createDiffPackagesByLastNums = function (appId, originalPackage, num) {
 
 proto.createDiffPackages = function (originalPackage, destPackages, isUseDiffText) {
   if (!_.isArray(destPackages)) {
-    return Promise.reject(new AppError.AppError('第二个参数必须是数组'));
+    return Promise.reject(new AppError.AppError('The second argument must be an array'));
   }
   if (destPackages.length <= 0) {
     return null;
@@ -356,10 +356,10 @@ proto.releasePackage = function (appId, deploymentId, packageInfo, filePath, rel
     log.debug(`releasePackage targetBinaryVersion ${appVersion} not support.`);
     return Promise.reject(new AppError.AppError(`targetBinaryVersion ${appVersion} not support.`))
   }
-  var description = packageInfo.description; //描述
-  var isDisabled = packageInfo.isDisabled; //是否立刻下载
-  var rollout = packageInfo.rollout; //灰度百分比
-  var isMandatory = packageInfo.isMandatory; //是否强制更新，无法跳过
+  var description = packageInfo.description; // description
+  var isDisabled = packageInfo.isDisabled; // whether to disable immediately
+  var rollout = packageInfo.rollout; // rollout percentage
+  var isMandatory = packageInfo.isMandatory; // whether to force update
   var tmpDir = os.tmpdir();
   var directoryPathParent = path.join(tmpDir, 'codepuh_' + security.randToken(32));
   var directoryPath = path.join(directoryPathParent, 'current');
@@ -603,7 +603,7 @@ proto.rollbackPackage = function (deploymentVersionId, targetLabel, rollbackUid)
   return models.DeploymentsVersions.findById(deploymentVersionId)
   .then((deploymentsVersions) => {
     if (!deploymentsVersions) {
-      throw new AppError.AppError("您之前还没有发布过版本");
+      throw new AppError.AppError("You have not released any version yet.");
     }
     return models.Packages.findById(deploymentsVersions.current_package_id)
     .then((currentPackageInfo) => {
@@ -627,7 +627,7 @@ proto.rollbackPackage = function (deploymentVersionId, targetLabel, rollbackUid)
           }
         }
       }
-      throw new AppError.AppError("没有可供回滚的版本");
+      throw new AppError.AppError("No version available to rollback.");
     })
     .then((rollbackPackage) => {
       var params = {

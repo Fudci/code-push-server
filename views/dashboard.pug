@@ -783,7 +783,7 @@ html(lang="en")
           </div>
         `;
 
-        loadDeployments(app.name, bodyId);
+        loadDeployments(app.name, card.querySelector('.dep-cols'));
         return card;
       }
 
@@ -792,8 +792,7 @@ html(lang="en")
         card.classList.toggle('open');
       }
 
-      async function loadDeployments(appName, containerId) {
-        const container = document.getElementById(containerId);
+      async function loadDeployments(appName, container) {
         try {
           const data = await apiFetch('/apps/' + encodeURIComponent(appName) + '/deployments');
           const deps = data.deployments || [];

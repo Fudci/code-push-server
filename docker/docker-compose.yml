@@ -2,14 +2,17 @@ version: "3.7"
 services:
   server:
     image: tablee/code-push-server:v0.5.2
+    restart: always
     volumes:
       - data-storage:/data/storage
       - data-tmp:/data/tmp
       - ./config.js:/config.js
     environment:
-      DOWNLOAD_URL: "http://YOU_MACHINE_IP:3000/download"
-      MYSQL_HOST: "YOU_MACHINE_IP"
-      MYSQL_PORT: "3308"
+      # URL publik server (untuk download link di bundle)
+      DOWNLOAD_URL: "http://43.134.108.81:3000/download"
+      # Gunakan nama service Docker, bukan IP (container satu network)
+      MYSQL_HOST: "db"
+      MYSQL_PORT: "3306"
       MYSQL_USERNAME: "codepush"
       MYSQL_PASSWORD: "123456"
       MYSQL_DATABASE: "codepush"
@@ -17,24 +20,19 @@ services:
       DATA_DIR: "/data/tmp"
       NODE_ENV: "production"
       CONFIG_FILE: "/config.js"
-      REDIS_HOST: "YOU_MACHINE_IP"
-      REDIS_PORT: "6388"
-    deploy:
-      resources:
-        limits:
-          cpus: "2"
-          memory: 1000M
-      restart_policy:
-        condition: on-failure
+      # Gunakan nama service Docker
+      REDIS_HOST: "redis"
+      REDIS_PORT: "6379"
     ports:
       - "3000:3000"
     networks:
-      - servernet
+      - appnet
     depends_on:
       - db
       - redis
   db:
     image: mysql:5.7.23
+    restart: always
     volumes:
       - data-mysql:/var/lib/mysql
       - ./sql/codepush-all.sql:/docker-entrypoint-initdb.d/codepush-all.sql
@@ -43,19 +41,20 @@ services:
     environment:
       MYSQL_ALLOW_EMPTY_PASSWORD: "On"
     networks:
-      - dbnet
+      - appnet
   redis:
     image: redis:4.0.11-alpine
+    restart: always
     volumes:
       - data-redis:/data
     ports:
       - "6388:6379"
     networks:
-      - redisnet
+      - appnet
 networks:
-  servernet:
-  dbnet:
-  redisnet:
+  # Satu network bersama agar server bisa reach db & redis
+  appnet:
+    driver: bridge
 volumes:
   data-storage:
   data-tmp:

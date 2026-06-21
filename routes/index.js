@@ -12,6 +12,10 @@ router.get('/', (req, res, next) => {
   res.render('index', { title: 'CodePushServer' });
 });
 
+router.get('/dashboard', (req, res, next) => {
+  res.render('dashboard', { title: 'CodePush Dashboard' });
+});
+
 router.get('/README.md', (req, res, next) => {
   var MarkdownIt = require('markdown-it');
   const path = require('path');

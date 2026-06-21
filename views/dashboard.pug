@@ -1,0 +1,654 @@
+doctype html
+html(lang="en")
+  head
+    meta(charset="UTF-8")
+    meta(name="viewport" content="width=device-width, initial-scale=1.0")
+    title CodePush Dashboard
+    link(rel="preconnect" href="https://fonts.googleapis.com")
+    link(rel="preconnect" href="https://fonts.gstatic.com" crossorigin)
+    link(rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap")
+    style.
+      :root {
+        --bg-primary: #0a0e1a;
+        --bg-card: #111827;
+        --bg-card-hover: #1a2235;
+        --bg-input: #1e2d40;
+        --accent: #6366f1;
+        --accent-2: #8b5cf6;
+        --accent-green: #10b981;
+        --accent-yellow: #f59e0b;
+        --accent-red: #ef4444;
+        --accent-blue: #3b82f6;
+        --text-primary: #f1f5f9;
+        --text-secondary: #94a3b8;
+        --text-muted: #475569;
+        --border: #1e293b;
+        --border-light: #2d3748;
+        --gradient: linear-gradient(135deg, #6366f1, #8b5cf6);
+        --gradient-green: linear-gradient(135deg, #10b981, #059669);
+        --gradient-red: linear-gradient(135deg, #ef4444, #dc2626);
+        --shadow: 0 4px 24px rgba(0,0,0,0.4);
+        --radius: 16px;
+        --radius-sm: 10px;
+      }
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      body {
+        font-family: 'Inter', sans-serif;
+        background: var(--bg-primary);
+        color: var(--text-primary);
+        min-height: 100vh;
+      }
+
+      /* ===== AUTH OVERLAY ===== */
+      #auth-overlay {
+        position: fixed; inset: 0; z-index: 999;
+        background: var(--bg-primary);
+        display: flex; align-items: center; justify-content: center;
+      }
+      .auth-box {
+        background: var(--bg-card);
+        border: 1px solid var(--border-light);
+        border-radius: var(--radius);
+        padding: 40px;
+        width: 380px;
+        box-shadow: var(--shadow);
+        animation: fadeUp 0.4s ease;
+      }
+      .auth-logo {
+        text-align: center;
+        margin-bottom: 28px;
+      }
+      .auth-logo .icon {
+        width: 56px; height: 56px;
+        background: var(--gradient);
+        border-radius: 14px;
+        display: inline-flex; align-items: center; justify-content: center;
+        font-size: 26px; margin-bottom: 12px;
+      }
+      .auth-logo h1 { font-size: 20px; font-weight: 700; }
+      .auth-logo p { color: var(--text-secondary); font-size: 13px; margin-top: 4px; }
+      .auth-form label {
+        display: block; font-size: 12px; font-weight: 600;
+        color: var(--text-secondary); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;
+      }
+      .auth-form input {
+        width: 100%; padding: 12px 14px;
+        background: var(--bg-input);
+        border: 1px solid var(--border-light);
+        border-radius: var(--radius-sm);
+        color: var(--text-primary); font-family: 'Inter', sans-serif; font-size: 14px;
+        outline: none; margin-bottom: 16px; transition: border-color 0.2s;
+      }
+      .auth-form input:focus { border-color: var(--accent); }
+      .btn-login {
+        width: 100%; padding: 13px;
+        background: var(--gradient);
+        border: none; border-radius: var(--radius-sm);
+        color: white; font-family: 'Inter', sans-serif;
+        font-size: 14px; font-weight: 600; cursor: pointer;
+        transition: opacity 0.2s, transform 0.1s;
+      }
+      .btn-login:hover { opacity: 0.9; transform: translateY(-1px); }
+      .btn-login:active { transform: translateY(0); }
+      .auth-error {
+        color: var(--accent-red); font-size: 13px;
+        text-align: center; margin-top: 12px; display: none;
+      }
+
+      /* ===== LAYOUT ===== */
+      #app { display: none; }
+      .topbar {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 18px 28px;
+        background: rgba(17,24,39,0.95);
+        backdrop-filter: blur(12px);
+        border-bottom: 1px solid var(--border);
+        position: sticky; top: 0; z-index: 100;
+      }
+      .topbar-left { display: flex; align-items: center; gap: 12px; }
+      .topbar-icon {
+        width: 36px; height: 36px;
+        background: var(--gradient);
+        border-radius: 9px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 18px;
+      }
+      .topbar h1 { font-size: 16px; font-weight: 700; }
+      .topbar-right { display: flex; align-items: center; gap: 12px; }
+      .badge-online {
+        display: flex; align-items: center; gap: 6px;
+        padding: 5px 12px;
+        background: rgba(16,185,129,0.12);
+        border: 1px solid rgba(16,185,129,0.3);
+        border-radius: 100px; font-size: 12px; color: var(--accent-green);
+      }
+      .badge-online::before {
+        content: ''; width: 7px; height: 7px;
+        background: var(--accent-green); border-radius: 50%;
+        animation: pulse 2s infinite;
+      }
+      .btn-logout {
+        padding: 7px 14px;
+        background: transparent;
+        border: 1px solid var(--border-light);
+        border-radius: var(--radius-sm);
+        color: var(--text-secondary); font-size: 12px; font-weight: 500;
+        cursor: pointer; transition: all 0.2s; font-family: 'Inter', sans-serif;
+      }
+      .btn-logout:hover { border-color: var(--accent-red); color: var(--accent-red); }
+      .main { padding: 28px; max-width: 1400px; margin: 0 auto; }
+
+      /* ===== STATS ROW ===== */
+      .stats-grid {
+        display: grid; grid-template-columns: repeat(4, 1fr);
+        gap: 16px; margin-bottom: 28px;
+      }
+      .stat-card {
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 22px;
+        transition: transform 0.2s, box-shadow 0.2s;
+        position: relative; overflow: hidden;
+      }
+      .stat-card::before {
+        content: ''; position: absolute;
+        top: 0; left: 0; right: 0; height: 3px;
+      }
+      .stat-card.purple::before { background: var(--gradient); }
+      .stat-card.green::before { background: var(--gradient-green); }
+      .stat-card.yellow::before { background: linear-gradient(135deg, #f59e0b, #d97706); }
+      .stat-card.red::before { background: var(--gradient-red); }
+      .stat-card:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
+      .stat-label { font-size: 12px; color: var(--text-secondary); font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; }
+      .stat-value { font-size: 32px; font-weight: 800; margin: 8px 0 4px; }
+      .stat-value.purple { color: #a5b4fc; }
+      .stat-value.green { color: #6ee7b7; }
+      .stat-value.yellow { color: #fcd34d; }
+      .stat-value.red { color: #fca5a5; }
+      .stat-sub { font-size: 12px; color: var(--text-muted); }
+
+      /* ===== SECTION HEADER ===== */
+      .section-header {
+        display: flex; align-items: center; justify-content: space-between;
+        margin-bottom: 18px;
+      }
+      .section-title { font-size: 16px; font-weight: 700; }
+      .section-sub { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+      .btn-refresh {
+        padding: 7px 14px;
+        background: rgba(99,102,241,0.12);
+        border: 1px solid rgba(99,102,241,0.3);
+        border-radius: var(--radius-sm);
+        color: var(--accent); font-size: 12px; font-weight: 500;
+        cursor: pointer; transition: all 0.2s; font-family: 'Inter', sans-serif;
+      }
+      .btn-refresh:hover { background: rgba(99,102,241,0.22); }
+
+      /* ===== APP CARDS ===== */
+      .apps-grid { display: flex; flex-direction: column; gap: 20px; }
+      .app-card {
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        overflow: hidden;
+        transition: border-color 0.2s;
+      }
+      .app-card:hover { border-color: var(--border-light); }
+      .app-header {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 20px 24px;
+        cursor: pointer; user-select: none;
+      }
+      .app-header-left { display: flex; align-items: center; gap: 14px; }
+      .app-avatar {
+        width: 42px; height: 42px;
+        background: var(--gradient);
+        border-radius: 11px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 20px; flex-shrink: 0;
+      }
+      .app-name { font-size: 15px; font-weight: 700; }
+      .app-meta { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+      .app-chevron {
+        color: var(--text-muted); font-size: 18px;
+        transition: transform 0.3s;
+      }
+      .app-card.open .app-chevron { transform: rotate(180deg); }
+      .app-body {
+        display: none;
+        padding: 0 24px 24px;
+        border-top: 1px solid var(--border);
+      }
+      .app-card.open .app-body { display: block; }
+
+      /* ===== DEPLOYMENTS ===== */
+      .deployments-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 20px; }
+      .dep-card {
+        background: var(--bg-primary);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        padding: 18px;
+      }
+      .dep-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+      .dep-name { font-size: 13px; font-weight: 700; }
+      .dep-badge {
+        padding: 3px 10px;
+        border-radius: 100px; font-size: 11px; font-weight: 600;
+      }
+      .dep-badge.production { background: rgba(99,102,241,0.15); color: #a5b4fc; border: 1px solid rgba(99,102,241,0.3); }
+      .dep-badge.staging { background: rgba(245,158,11,0.15); color: #fcd34d; border: 1px solid rgba(245,158,11,0.3); }
+      .dep-key {
+        font-size: 11px; color: var(--text-muted);
+        font-family: 'Courier New', monospace;
+        background: rgba(255,255,255,0.04);
+        padding: 5px 8px; border-radius: 6px;
+        word-break: break-all; margin-bottom: 14px;
+      }
+
+      /* ===== METRICS ROW ===== */
+      .metrics-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 14px; }
+      .metric-item { text-align: center; }
+      .metric-num { font-size: 20px; font-weight: 800; }
+      .metric-num.green { color: #6ee7b7; }
+      .metric-num.blue { color: #93c5fd; }
+      .metric-num.yellow { color: #fcd34d; }
+      .metric-num.red { color: #fca5a5; }
+      .metric-label { font-size: 10px; color: var(--text-muted); margin-top: 2px; text-transform: uppercase; }
+
+      /* ===== HISTORY TABLE ===== */
+      .history-label { font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
+      .history-list { display: flex; flex-direction: column; gap: 6px; }
+      .history-item {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 10px 12px;
+        background: rgba(255,255,255,0.03);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        font-size: 12px;
+      }
+      .history-item-left { display: flex; align-items: center; gap: 10px; }
+      .history-label-badge {
+        padding: 2px 8px;
+        background: rgba(99,102,241,0.2);
+        border-radius: 4px;
+        font-size: 11px; font-weight: 700;
+        color: #a5b4fc; font-family: monospace;
+      }
+      .history-desc { color: var(--text-secondary); }
+      .history-time { color: var(--text-muted); font-size: 11px; }
+      .history-mandatory {
+        padding: 2px 7px;
+        background: rgba(239,68,68,0.15);
+        color: #fca5a5;
+        border-radius: 4px; font-size: 10px; font-weight: 600;
+      }
+      .no-history { color: var(--text-muted); font-size: 12px; padding: 14px; text-align: center; }
+
+      /* ===== LOADING ===== */
+      .loading-wrap { display: flex; align-items: center; justify-content: center; padding: 80px; }
+      .spinner {
+        width: 36px; height: 36px;
+        border: 3px solid var(--border-light);
+        border-top-color: var(--accent);
+        border-radius: 50%;
+        animation: spin 0.7s linear infinite;
+      }
+      .empty-state {
+        text-align: center; padding: 60px;
+        color: var(--text-muted);
+      }
+      .empty-state .icon { font-size: 42px; margin-bottom: 12px; }
+      .empty-state p { font-size: 14px; }
+
+      /* ===== TOAST ===== */
+      #toast {
+        position: fixed; bottom: 24px; right: 24px; z-index: 9999;
+        padding: 12px 20px;
+        background: var(--bg-card);
+        border: 1px solid var(--border-light);
+        border-radius: var(--radius-sm);
+        font-size: 13px; font-weight: 500;
+        box-shadow: var(--shadow);
+        transform: translateY(80px); opacity: 0;
+        transition: all 0.3s; pointer-events: none;
+      }
+      #toast.show { transform: translateY(0); opacity: 1; }
+      #toast.success { border-color: rgba(16,185,129,0.4); color: var(--accent-green); }
+      #toast.error { border-color: rgba(239,68,68,0.4); color: var(--accent-red); }
+
+      /* ===== ANIMATIONS ===== */
+      @keyframes fadeUp {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+      @keyframes spin { to { transform: rotate(360deg); } }
+      @keyframes pulse {
+        0%, 100% { opacity: 1; } 50% { opacity: 0.4; }
+      }
+      @media (max-width: 768px) {
+        .stats-grid { grid-template-columns: repeat(2,1fr); }
+        .deployments-grid { grid-template-columns: 1fr; }
+      }
+
+  body
+    //- AUTH OVERLAY
+    #auth-overlay
+      .auth-box
+        .auth-logo
+          .icon 🚀
+          h1 CodePush Dashboard
+          p Monitor OTA updates kamu
+        form.auth-form#login-form
+          label Email / Username
+          input#login-email(type="text" placeholder="admin@email.com" autocomplete="username")
+          label Password
+          input#login-password(type="password" placeholder="••••••••" autocomplete="current-password")
+          button.btn-login(type="submit") Login →
+          p.auth-error#auth-error Login gagal. Cek email & password.
+
+    //- MAIN APP
+    #app
+      .topbar
+        .topbar-left
+          .topbar-icon 🚀
+          div
+            h1 CodePush Dashboard
+        .topbar-right
+          .badge-online Server Online
+          span#user-email(style="font-size:13px;color:#94a3b8")
+          button.btn-logout#btn-logout Logout
+
+      .main
+        //- STATS
+        .stats-grid
+          .stat-card.purple
+            .stat-label Total Apps
+            .stat-value.purple#stat-apps 0
+            .stat-sub Terdaftar di server
+          .stat-card.green
+            .stat-label Active Installs
+            .stat-value.green#stat-active 0
+            .stat-sub Device pakai update terbaru
+          .stat-card.yellow
+            .stat-label Total Downloads
+            .stat-value.yellow#stat-downloads 0
+            .stat-sub Semua versi
+          .stat-card.red
+            .stat-label Failures
+            .stat-value.red#stat-failures 0
+            .stat-sub Update gagal
+
+        //- APPS
+        .section-header
+          div
+            .section-title 📦 Apps & Deployments
+            .section-sub Klik app untuk lihat detail deployment & history release
+          button.btn-refresh#btn-refresh ↻ Refresh
+
+        #apps-container
+          .loading-wrap
+            .spinner
+
+    #toast
+
+    script.
+      const API = '';
+      let authToken = '';
+
+      // ===== UTILS =====
+      function showToast(msg, type = 'success') {
+        const t = document.getElementById('toast');
+        t.textContent = msg;
+        t.className = 'show ' + type;
+        setTimeout(() => { t.className = ''; }, 3000);
+      }
+
+      function timeAgo(ts) {
+        if (!ts) return '-';
+        const d = new Date(ts);
+        const s = Math.floor((Date.now() - d) / 1000);
+        if (s < 60) return s + 's ago';
+        if (s < 3600) return Math.floor(s/60) + 'm ago';
+        if (s < 86400) return Math.floor(s/3600) + 'h ago';
+        return Math.floor(s/86400) + 'd ago';
+      }
+
+      function bytesHuman(b) {
+        if (!b) return '0 B';
+        if (b < 1024) return b + ' B';
+        if (b < 1048576) return (b/1024).toFixed(1) + ' KB';
+        return (b/1048576).toFixed(1) + ' MB';
+      }
+
+      async function apiFetch(path) {
+        const r = await fetch(API + path, {
+          headers: { Authorization: 'Bearer ' + authToken }
+        });
+        if (!r.ok) throw new Error(r.status);
+        return r.json();
+      }
+
+      // ===== AUTH =====
+      function checkAuth() {
+        const token = sessionStorage.getItem('auth');
+        if (token) {
+          authToken = token;
+          document.getElementById('auth-overlay').style.display = 'none';
+          document.getElementById('app').style.display = 'block';
+          loadDashboard();
+        }
+      }
+
+      document.getElementById('login-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const account = document.getElementById('login-email').value;
+        const password = document.getElementById('login-password').value;
+        const errEl = document.getElementById('auth-error');
+        errEl.style.display = 'none';
+        try {
+          const r = await fetch(API + '/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: 'account=' + encodeURIComponent(account) + '&password=' + encodeURIComponent(password)
+          });
+          const data = await r.json();
+          if (data.status === 'OK') {
+            authToken = data.results.tokens;
+            sessionStorage.setItem('auth', authToken);
+            document.getElementById('auth-overlay').style.display = 'none';
+            document.getElementById('app').style.display = 'block';
+            const em = account.includes('@') ? account : account;
+            document.getElementById('user-email').textContent = em;
+            loadDashboard();
+          } else {
+            errEl.style.display = 'block';
+          }
+        } catch(err) {
+          errEl.style.display = 'block';
+        }
+      });
+
+      document.getElementById('btn-logout').addEventListener('click', () => {
+        sessionStorage.removeItem('auth');
+        location.reload();
+      });
+
+      document.getElementById('btn-refresh').addEventListener('click', loadDashboard);
+
+      // ===== DASHBOARD =====
+      let totalActive = 0, totalDownloads = 0, totalFailures = 0;
+
+      async function loadDashboard() {
+        totalActive = 0; totalDownloads = 0; totalFailures = 0;
+        const container = document.getElementById('apps-container');
+        container.innerHTML = '<div class="loading-wrap"><div class="spinner"></div></div>';
+        try {
+          const data = await apiFetch('/apps');
+          const apps = data.apps || [];
+          document.getElementById('stat-apps').textContent = apps.length;
+
+          if (apps.length === 0) {
+            container.innerHTML = '<div class="empty-state"><div class="icon">📭</div><p>Belum ada app terdaftar.<br>Jalankan <code>code-push app add</code> dulu.</p></div>';
+            return;
+          }
+
+          container.innerHTML = '<div class="apps-grid" id="apps-list"></div>';
+          const list = document.getElementById('apps-list');
+
+          for (const app of apps) {
+            const card = await buildAppCard(app);
+            list.appendChild(card);
+          }
+
+          document.getElementById('stat-active').textContent = totalActive.toLocaleString();
+          document.getElementById('stat-downloads').textContent = totalDownloads.toLocaleString();
+          document.getElementById('stat-failures').textContent = totalFailures.toLocaleString();
+          showToast('✅ Dashboard diperbarui', 'success');
+        } catch(err) {
+          container.innerHTML = '<div class="empty-state"><div class="icon">❌</div><p>Gagal load data. Cek koneksi server.<br><small>' + err.message + '</small></p></div>';
+          showToast('❌ Gagal load data', 'error');
+        }
+      }
+
+      async function buildAppCard(app) {
+        const card = document.createElement('div');
+        card.className = 'app-card';
+
+        // Header
+        const osIcon = app.os === 1 ? '🍎' : app.os === 2 ? '🤖' : '💻';
+        const osName = app.os === 1 ? 'iOS' : app.os === 2 ? 'Android' : 'Windows';
+        const totalDeps = (app.deployments || []).length;
+
+        card.innerHTML = `
+          <div class="app-header" onclick="toggleCard(this)">
+            <div class="app-header-left">
+              <div class="app-avatar">${osIcon}</div>
+              <div>
+                <div class="app-name">${app.name}</div>
+                <div class="app-meta">${osName} · ${totalDeps} deployment</div>
+              </div>
+            </div>
+            <span class="app-chevron">⌄</span>
+          </div>
+          <div class="app-body" id="body-${encodeURIComponent(app.name)}">
+            <div class="loading-wrap"><div class="spinner"></div></div>
+          </div>
+        `;
+
+        // Auto-load first app open
+        const body = card.querySelector('.app-body');
+        loadAppDeployments(app.name, body);
+        card.classList.add('open');
+
+        return card;
+      }
+
+      function toggleCard(header) {
+        const card = header.closest('.app-card');
+        const isOpen = card.classList.contains('open');
+        if (isOpen) {
+          card.classList.remove('open');
+        } else {
+          card.classList.add('open');
+        }
+      }
+
+      async function loadAppDeployments(appName, body) {
+        try {
+          const data = await apiFetch('/apps/' + encodeURIComponent(appName) + '/deployments');
+          const deps = data.deployments || [];
+
+          if (deps.length === 0) {
+            body.innerHTML = '<div class="no-history">Belum ada deployment untuk app ini.</div>';
+            return;
+          }
+
+          let html = '<div class="deployments-grid">';
+          for (const dep of deps) {
+            const metricsHtml = await buildMetrics(appName, dep.name);
+            const historyHtml = await buildHistory(appName, dep.name);
+            const badgeClass = dep.name.toLowerCase() === 'production' ? 'production' : 'staging';
+            const keyShort = (dep.key || dep.deployment_key || '').substring(0, 20) + '...';
+            html += `
+              <div class="dep-card">
+                <div class="dep-header">
+                  <span class="dep-name">${dep.name}</span>
+                  <span class="dep-badge ${badgeClass}">${dep.name}</span>
+                </div>
+                <div class="dep-key" title="${dep.key || dep.deployment_key || ''}">🔑 ${keyShort}</div>
+                ${metricsHtml}
+                ${historyHtml}
+              </div>
+            `;
+          }
+          html += '</div>';
+          body.innerHTML = html;
+        } catch(err) {
+          body.innerHTML = '<div class="no-history">Gagal load deployment: ' + err.message + '</div>';
+        }
+      }
+
+      async function buildMetrics(appName, depName) {
+        try {
+          const data = await apiFetch('/apps/' + encodeURIComponent(appName) + '/deployments/' + encodeURIComponent(depName) + '/metrics');
+          const metrics = data.metrics || {};
+          let active = 0, downloaded = 0, installed = 0, failed = 0;
+          for (const v of Object.values(metrics)) {
+            active += (v.active || 0);
+            downloaded += (v.downloaded || 0);
+            installed += (v.installed || 0);
+            failed += (v.failed || 0);
+          }
+          totalActive += active;
+          totalDownloads += downloaded;
+          totalFailures += failed;
+          return `
+            <div class="metrics-row">
+              <div class="metric-item"><div class="metric-num green">${active}</div><div class="metric-label">Active</div></div>
+              <div class="metric-item"><div class="metric-num blue">${downloaded}</div><div class="metric-label">DL</div></div>
+              <div class="metric-item"><div class="metric-num yellow">${installed}</div><div class="metric-label">Installed</div></div>
+              <div class="metric-item"><div class="metric-num red">${failed}</div><div class="metric-label">Failed</div></div>
+            </div>
+          `;
+        } catch(e) {
+          return '<div class="metrics-row" style="color:var(--text-muted);font-size:11px;text-align:center">Metrics tidak tersedia</div>';
+        }
+      }
+
+      async function buildHistory(appName, depName) {
+        try {
+          const data = await apiFetch('/apps/' + encodeURIComponent(appName) + '/deployments/' + encodeURIComponent(depName) + '/history');
+          const history = (data.history || []).slice().reverse().slice(0, 5);
+          if (history.length === 0) {
+            return '<div class="history-label">History</div><div class="no-history">Belum ada release</div>';
+          }
+          let html = '<div class="history-label">5 Release Terakhir</div><div class="history-list">';
+          for (const h of history) {
+            const mandatory = h.isMandatoryUpdate ? '<span class="history-mandatory">WAJIB</span>' : '';
+            const ts = h.uploadTime ? timeAgo(h.uploadTime) : '-';
+            const desc = h.description || '(no description)';
+            const size = bytesHuman(h.size);
+            html += `
+              <div class="history-item">
+                <div class="history-item-left">
+                  <span class="history-label-badge">${h.label || '-'}</span>
+                  <span class="history-desc" title="${desc}">${desc.length > 30 ? desc.substring(0,30)+'…' : desc}</span>
+                  ${mandatory}
+                </div>
+                <div style="display:flex;align-items:center;gap:8px">
+                  <span style="font-size:11px;color:var(--text-muted)">${size}</span>
+                  <span class="history-time">${ts}</span>
+                </div>
+              </div>
+            `;
+          }
+          html += '</div>';
+          return html;
+        } catch(e) {
+          return '<div class="history-label">History</div><div class="no-history">Gagal load history</div>';
+        }
+      }
+
+      // ===== INIT =====
+      checkAuth();
